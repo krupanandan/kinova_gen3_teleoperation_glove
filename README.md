@@ -1,154 +1,228 @@
-# ROS 2 Kortex Dockerized Workspace
+# ROS 2 Kortex – RSS Project
+### *Simulation-Only Environment for Controlling a Virtual Kinova Gen3 Arm Using Sensor Data*
 
-This repository provides a Dockerized environment for working with the ROS 2 Kortex package. The workspace is set up to include the ros2_kortex repository as a Git submodule inside a ROS 2 workspace (colcon_ws), which is then built and run within a Docker container.
+---
 
-## Prerequisites
+## 🎯 Purpose of This Workspace
+This repository provides a **Dockerized ROS 2 environment** for working with the Kinova Gen3 robotic arm **entirely in simulation**.  
+It is tailored for the **RSS Project**, where students must:
 
-- **Docker**: Ensure Docker is installed on your system. You can download it from [here](https://www.docker.com/get-started).
+- Read sensor data from microcontrollers (e.g., ESP8266/MPU6050)  
+- Send this data to ROS 2 over Wi-Fi  
+- Map sensor values to robot motions  
+- Control a **simulated Kinova Gen3 arm** in real time  
 
-## Setup Instructions
+**No real robot is required.**  
+**No IP address or hardware connection is needed.**
 
-### 0. Network Setup
-For network setup, please follow the instructions from the  [kinova ROS 1](https://git-ce.rwth-aachen.de/wzl-mq-ms/docker-ros/ros/kinova-ros)
+This workspace includes:
+- **URDF visualization**
+- **ros2_control with fake hardware** (primary mode)
+- **MoveIt2 for motion planning**
+- **Gazebo/Ignition for 3D simulation**
 
-### 1. Clone This Repository
+---
 
-Clone this repository along with its submodules to your local machine (make sure you're cloning from the right branch):
+## 📦 Installation Instructions
 
-```sh
-git clone --recurse-submodules https://git-ce.rwth-aachen.de/wzl-mq-ms/docker-ros/ros2/kinova-ros2
-cd /kinova-ros2
+### 1. Clone the Repository
+
+Each project group has its own repository named:
+
+**RSS_WS26_Project_Group_<GROUP_NUMBER>**
+
+To clone your group’s repository, use the following command (replacing <GROUP_NUMBER> with the number of your group):
+
+```bash
+git clone --recurse-submodules https://git-ce.rwth-aachen.de/wzl-mq-ms/forschung-lehre/robotic-sensor-systems/rss_ws26_project_group_<GROUP_NUMBER>.git
+
+cd rss_ws26_project_group_<GROUP_NUMBER>
 ```
-If you’ve already cloned the repository without submodules, you can initialize and update the submodules like this:
 
-```sh
+If you forgot `--recurse-submodules`:
+
+```bash
 git submodule update --init --recursive
 ```
 
+---
+
 ### 2. Build the Docker Image
 
-Build the Docker image using the provided Dockerfile. This command must be run from the root of the repository where the Dockerfile is located:
+Run from the root folder:
 
-```sh
+```bash
 bash docker_build.sh
 ```
-This will create a Docker image named ros2-kortex:latest, which includes the ROS 2 environment and the ros2_kortex package.
 
-**The build process may take some time. On systems with an RTX 3050, the process may freeze when building Gazebo dependencies. Grabbing a coffee is recommended if the process stalls.**
+This builds the image:
 
+```
+ros2-kortex:latest
+```
+
+---
 
 ### 3. Run the Docker Container
 
-Once the Docker image is built, you can run the container interactively using:
-
-```sh
-cd docker_run/
+```bash
+cd docker_run
 bash docker_run.sh
 ```
 
-This will start a new container from the ros2-kortex:latest image, allowing you to interact with the ROS 2 environment.
+This opens a ready-to-use ROS 2 Humble environment.
 
-### 4. Running ROS 2 Nodes
+---
 
-After entering the container, you can source the ROS 2 and workspace setup files and run ROS 2 nodes or launch files:
+# 🤖 Running the Simulated Kinova Robot
 
-```sh
-# Source ROS 2 environment
+### Source the environment
+Inside the container:
+
+```bash
 source /opt/ros/humble/setup.bash
-
-# Source the workspace overlay
 source /colcon_ws/install/setup.bash
-
 ```
 
-## Usage
+---
 
-To launch and view any of the robot's URDF run:
-```sh
+# 🔷 Option 1 — URDF Visualization Only
+
+```bash
 ros2 launch kortex_description view_robot.launch.py
 ```
-The accepted arguments are:
 
-- `robot_type` : Your robot model. Possible values are either `gen3` or `gen3_lite`, the default is `gen3`.
+Arguments:
+- `robot_type:=gen3`
+- `dof:=7`
+- `gripper:=robotiq_2f_85`
 
-- `gripper` : Gripper to use. Possible values for the Gen3 are either `robotiq_2f_85` or `robotiq_2f_140`. For the Gen3 Lite, the only option is `gen3_lite_2f`. Default value is an empty string, which will display the arm without a gripper.
+---
 
-- `dof` : Degrees of freedom of the arm. Possible values for the Gen3 are either `6` or `7`. For the Gen3 Lite, the only option is `6`. Default value is `7`.
+# 🔷 Option 2 — Fake Hardware (Recommended for RSS Project)
 
-### Gen 3 Robots
+This is the **primary mode** for the assignment.
 
-The `gen3.launch.py` launch file is designed to be used for Gen3 arms. The typical use case to bringup and visualize the 7 DoF Kinova Gen3 robot arm (default) with mock hardware on Rviz:
-```sh
-ros2 launch kortex_bringup gen3.launch.py \
-  robot_ip:=yyy.yyy.yyy.yyy \
-  use_fake_hardware:=true
+It loads:
+- ros2_control controllers  
+- Fake hardware interface  
+- Joint state publisher  
+- Action servers  
+- Command interfaces  
+- Full TF tree  
+
+Launch:
+
+```bash
+ros2 launch kortex_bringup gen3.launch.py     use_fake_hardware:=true
 ```
 
-Alternatively, for a physical robot:
-```sh
-ros2 launch kortex_bringup gen3.launch.py \
-  robot_ip:=192.168.1.10 \
+Provides ROS interfaces such as:
+
+- `/joint_states`
+- `/joint_trajectory_controller/command`
+- `/joint_trajectory_controller/follow_joint_trajectory`
+
+Perfect for real-time control from sensors.
+
+---
+
+# 🔷 Option 3 — MoveIt2 Simulation
+
+```bash
+ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config sim.launch.py     use_sim_time:=true
 ```
 
-You can specify additional arguments if you wish to change your arm configuration: see details at the section of same name [ROS 2 Kortex](https://github.com/Kinovarobotics/ros2_kortex?tab=readme-ov-file#gen-3-robots)
+MoveIt2 enables:
 
-## Simulation
+- Trajectory generation  
+- Collision checking  
+- Visual planning  
 
-The `kortex_sim_control.launch.py` launch file is designed to simulate all of our arm models, you just need to specify your configuration through the arguments. By default, the Gen3 7 dof configuration is used :
+---
 
-```sh
-ros2 launch kortex_bringup kortex_sim_control.launch.py \
-  use_sim_time:=true \
-  launch_rviz:=false
+# 🛰️ Integrating Sensors (Project Goal)
+
+Students typically:
+
+### 1. Publish sensor data to ROS 2
+Example:
+
+```bash
+ros2 topic pub /my_sensor std_msgs/Float32 "data: 0.8"
 ```
 
-For arguments, see details at the section of same name [ROS 2 Kortex](https://github.com/Kinovarobotics/ros2_kortex?tab=readme-ov-file#simulation)
+### 2. Map sensor → joint command
+Conceptual flow:
 
-# MoveIt2
-
-* Remember to open a new terminal and:
-  ```sh
-  cd /kinova-ros2/docker_run/
-  bash docker_exec.sh
-  ```
-  Then repeat step 4 [Running ROS 2 Nodes](https://git-ce.rwth-aachen.de/wzl-mq-ms/docker-ros/ros2/kinova-ros2/-/edit/devel_lmanasses/README.md?ref_type=heads#4-running-ros-2-nodes)
-
-
-To generate motion plans and execute them with a simulated 7 DoF Kinova Gen3 arm with mock hardware:
-
-```sh
-ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config robot.launch.py \
-  robot_ip:=yyy.yyy.yyy.yyy \
-  use_fake_hardware:=true
+```
+sensor value → normalization → position target → trajectory command
 ```
 
-**To generate motion plans and execute them with an ignition simulated 7 DoF Kinova Gen3 arm (previously launched with the command at the simulation section):**
+### 3. Send commands to the robot
 
-```sh
-ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config sim.launch.py \
-  use_sim_time:=true
+```bash
+ros2 topic pub /joint_trajectory_controller/commands   trajectory_msgs/msg/JointTrajectory "..."
 ```
 
-To work with a physical robot and generate/execute paths with MoveIt run the following:
+The fake hardware simulates execution.
 
-For Gen3:
-```sh
-ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config robot.launch.py \
-  robot_ip:=192.168.1.10
+---
+
+# 🛠 Useful ROS 2 Commands
+
+```bash
+ros2 topic list
+ros2 topic echo /joint_states
+ros2 control list_controllers
+rviz2
 ```
-For Gen3-Lite:
-```sh
-ros2 launch kinova_gen3_lite_moveit_config robot.launch.py \
-  robot_ip:=192.168.1.10
+
+---
+
+# ⚠️ Important Notes
+
+- ❌ Do NOT connect to a physical robot  
+- ❌ Do NOT set `robot_ip`  
+- ❌ Do NOT install hardware drivers  
+
+This workspace is purely for simulation.
+
+---
+
+# 🧰 Troubleshooting
+
+### RViz does not start
+```bash
+rviz2 --disable-qt5-fix
 ```
 
-### Exit the Container
+### Topics missing
+```bash
+source /colcon_ws/install/setup.bash
+```
 
-To exit the container, simply type exit and press Enter.
+### DDS issues
+```bash
+export ROS_DOMAIN_ID=5
+```
 
+---
 
-### Notes
+# 🌐 Optional: Gazebo/Ignition Simulation
 
-This setup is based on the ROS 2 Humble distribution. If you need to use a different ROS 2 distribution, modify the Dockerfile and the setup commands accordingly.
+Advanced students may explore 3D physics simulation.
 
-The Docker container is configured to use CycloneDDS as the default RMW (ROS Middleware). This can be changed by modifying the Dockerfile and related configuration files.
+Example Ignition launch (if configured):
+
+```bash
+ros2 launch kortex_description gen3_ignition.launch.py
+```
+
+Or include URDF manually in custom Gazebo worlds.
+
+This is not required for the RSS Project but is available for exploration.
+
+---
+
+# 📘 End of README
