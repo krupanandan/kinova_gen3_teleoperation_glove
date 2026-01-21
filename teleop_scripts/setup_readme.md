@@ -1,7 +1,15 @@
+# Teleoperation setup and instructions.
+
+## Before uploading the code:
+Unplug pins D3 and D4 due to internal structure of the ESP32 Node MCU.
+
 Upload the .ino file into the ESP32 Node MCU.
 Adjust the baudrate as needed.
 
-run this in the docker script:
+Plug the D3 and D4 pins back in.
+
+### run this in the docker script:
+
 ```
 cd docker_run
 bash docker_run.sh
@@ -22,11 +30,13 @@ cd ../colcon_ws/src
 
 nano kinova_teleop.py
 ```
-# paste the code from the kinova_teleop.py in here. save and exit.
-#ensure the baudrate matches the one from the .ino file
+
+paste the code from the kinova_teleop.py in here. save and exit.
+ensure the baudrate matches the one from the .ino file
 
 --------------------------------------------------
-Run the following launch file in terminal 1:
+
+### Run the following launch file in terminal 1:
 
 ```
 ros2 launch kortex_bringup gen3.launch.py \
@@ -34,6 +44,6 @@ ros2 launch kortex_bringup gen3.launch.py \
   use_fake_hardware:=true
 ```
 
-Run the python script to control the robot in terminal 2:
+### Run the python script to control the robot in terminal 2:
 
 `python3 kinova_teleop.py`
