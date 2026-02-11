@@ -1,228 +1,90 @@
-# ROS 2 Kortex – RSS Project
-### *Simulation-Only Environment for Controlling a Virtual Kinova Gen3 Arm Using Sensor Data*
+# 🦾 Kinova Gen3 Teleoperation via Wearable Sensors
+### *Real-Time Control of a 6-DOF Robotic Arm using an ESP8266 & MPU6050 Glove*
 
 ---
 
-## 🎯 Purpose of This Workspace
-This repository provides a **Dockerized ROS 2 environment** for working with the Kinova Gen3 robotic arm **entirely in simulation**.  
-It is tailored for the **RSS Project**, where students must:
+## 🎯 Project Overview
+This project implements an intuitive teleoperation system for a **Kinova Gen3 robotic arm**. By utilizing a custom-built sensor glove, users can control the arm's 3D position and orientation in a simulated environment through natural hand gestures. 
 
-- Read sensor data from microcontrollers (e.g., ESP8266/MPU6050)  
-- Send this data to ROS 2 over Wi-Fi  
-- Map sensor values to robot motions  
-- Control a **simulated Kinova Gen3 arm** in real time  
+The system bridges physical hardware (IMU and Rotary Encoders) with a **ROS 2 Humble** simulation using a custom-developed Inverse Kinematics (IK) translation layer.
 
-**No real robot is required.**  
-**No IP address or hardware connection is needed.**
-
-This workspace includes:
-- **URDF visualization**
-- **ros2_control with fake hardware** (primary mode)
-- **MoveIt2 for motion planning**
-- **Gazebo/Ignition for 3D simulation**
+## 📺 Demo
+*(Insert a GIF or YouTube link here showing your glove moving the robot in Gazebo)*
 
 ---
 
-## 📦 Installation Instructions
-
-### 1. Clone the Repository
-
-Each project group has its own repository named:
-
-**RSS_WS26_Project_Group_<GROUP_NUMBER>**
-
-To clone your group’s repository, use the following command (replacing <GROUP_NUMBER> with the number of your group):
-
-```bash
-git clone --recurse-submodules https://git-ce.rwth-aachen.de/wzl-mq-ms/forschung-lehre/robotic-sensor-systems/rss_ws26_project_group_<GROUP_NUMBER>.git
-
-cd rss_ws26_project_group_<GROUP_NUMBER>
-```
-
-If you forgot `--recurse-submodules`:
-
-```bash
-git submodule update --init --recursive
-```
+## 🚀 Key Technical Highlights
+- **Custom Inverse Kinematics Bridge:** Developed a real-time IK solver using `ikpy` that translates Cartesian hand coordinates into 7-joint trajectories, bypassing simulation-only interface limitations.
+- **Multi-Threaded Architecture:** Utilized Python's `threading` library to decouple high-frequency serial data ingestion (200Hz) from the ROS 2 control loop (30Hz), ensuring zero-latency responsiveness.
+- **Signal Processing & Noise Mitigation:** Implemented software deadzones and input normalization to filter raw MPU6050 sensor noise, resulting in smooth and stable robotic motion.
+- **Asynchronous Gripper Control:** Integrated a ROS 2 Action Client to handle Robotiq gripper commands asynchronously, allowing the arm to move while the fingers are in motion.
 
 ---
 
-### 2. Build the Docker Image
+## 🛠️ System Architecture
+- **Hardware:** ESP8266 Microcontroller, MPU6050 (Pitch/Roll), Rotary Encoder (Z-axis/Yaw), IR Sensor (Gripper Toggle).
+- **Software:** ROS 2 Humble, Gazebo Physics, IKPy, NumPy.
+- **Communication:** Serial-over-USB at 3,000,000 Baud.
 
+---
+
+## 📦 Installation & Setup
+
+### 1. Build the Docker Image
 Run from the root folder:
-
 ```bash
 bash docker_build.sh
 ```
 
-This builds the image:
-
-```
-ros2-kortex:latest
-```
-
----
-
-### 3. Run the Docker Container
+### 2. Run the Docker Container
 
 ```bash
 cd docker_run
 bash docker_run.sh
 ```
 
-This opens a ready-to-use ROS 2 Humble environment.
+### 3. Launch the Simulation
 
----
-
-# 🤖 Running the Simulated Kinova Robot
-
-### Source the environment
-Inside the container:
+Inside the container, source the workspace and launch the fake hardware simulation:
 
 ```bash
 source /opt/ros/humble/setup.bash
 source /colcon_ws/install/setup.bash
+ros2 launch kortex_bringup gen3.launch.py use_fake_hardware:=true
+```
+
+### 4. Running the Teleoperation Node
+
+Ensure your sensor glove is connected to /dev/ttyUSB0 and execute the custom controller:
+
+```bash
+python3 holyshit.py
 ```
 
 ---
 
-# 🔷 Option 1 — URDF Visualization Only
+## 🎮 Controls
 
-```bash
-ros2 launch kortex_description view_robot.launch.py
-```
+Pitch/Roll: Tilt hand forward/back or left/right to move the arm in the XY plane (Mode 0) or rotate the wrist (Mode 1).
 
-Arguments:
-- `robot_type:=gen3`
-- `dof:=7`
-- `gripper:=robotiq_2f_85`
+Encoder Wheel: Controls the vertical Z-axis height.
 
----
+IR Sensor: Toggles the Robotiq 2F-85 gripper between Open and Closed states.
 
-# 🔷 Option 2 — Fake Hardware (Recommended for RSS Project)
-
-This is the **primary mode** for the assignment.
-
-It loads:
-- ros2_control controllers  
-- Fake hardware interface  
-- Joint state publisher  
-- Action servers  
-- Command interfaces  
-- Full TF tree  
-
-Launch:
-
-```bash
-ros2 launch kortex_bringup gen3.launch.py     use_fake_hardware:=true
-```
-
-Provides ROS interfaces such as:
-
-- `/joint_states`
-- `/joint_trajectory_controller/command`
-- `/joint_trajectory_controller/follow_joint_trajectory`
-
-Perfect for real-time control from sensors.
+Encoder Button: Resets the robot to the Home Position and recalibrates the glove offsets.
 
 ---
 
-# 🔷 Option 3 — MoveIt2 Simulation
+## 🎓 Academic Context
 
-```bash
-ros2 launch kinova_gen3_7dof_robotiq_2f_85_moveit_config sim.launch.py     use_sim_time:=true
-```
-
-MoveIt2 enables:
-
-- Trajectory generation  
-- Collision checking  
-- Visual planning  
+Developed as part of the Robotic Sensor Systems (RSS) course at RWTH Aachen University (WZL/MQ).
 
 ---
 
-# 🛰️ Integrating Sensors (Project Goal)
+## ⚠️ Troubleshooting
 
-Students typically:
+Serial Permission: If /dev/ttyUSB0 is denied, run sudo chmod 666 /dev/ttyUSB0.
 
-### 1. Publish sensor data to ROS 2
-Example:
-
-```bash
-ros2 topic pub /my_sensor std_msgs/Float32 "data: 0.8"
-```
-
-### 2. Map sensor → joint command
-Conceptual flow:
-
-```
-sensor value → normalization → position target → trajectory command
-```
-
-### 3. Send commands to the robot
-
-```bash
-ros2 topic pub /joint_trajectory_controller/commands   trajectory_msgs/msg/JointTrajectory "..."
-```
-
-The fake hardware simulates execution.
-
----
-
-# 🛠 Useful ROS 2 Commands
-
-```bash
-ros2 topic list
-ros2 topic echo /joint_states
-ros2 control list_controllers
-rviz2
-```
-
----
-
-# ⚠️ Important Notes
-
-- ❌ Do NOT connect to a physical robot  
-- ❌ Do NOT set `robot_ip`  
-- ❌ Do NOT install hardware drivers  
-
-This workspace is purely for simulation.
-
----
-
-# 🧰 Troubleshooting
-
-### RViz does not start
-```bash
-rviz2 --disable-qt5-fix
-```
-
-### Topics missing
-```bash
-source /colcon_ws/install/setup.bash
-```
-
-### DDS issues
-```bash
-export ROS_DOMAIN_ID=5
-```
-
----
-
-# 🌐 Optional: Gazebo/Ignition Simulation
-
-Advanced students may explore 3D physics simulation.
-
-Example Ignition launch (if configured):
-
-```bash
-ros2 launch kortex_description gen3_ignition.launch.py
-```
-
-Or include URDF manually in custom Gazebo worlds.
-
-This is not required for the RSS Project but is available for exploration.
-
----
+URDF Issues: The script automatically modifies the URDF to replace continuous joints with revolute for IK stability.
 
 # 📘 End of README
