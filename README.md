@@ -58,7 +58,7 @@ ros2 launch kortex_bringup gen3.launch.py use_fake_hardware:=true
 Ensure your sensor glove is connected to /dev/ttyUSB0 and execute the custom controller:
 
 ```bash
-python3 holyshit.py
+python3 Kinova_TeleOp.py
 ```
 
 ---
