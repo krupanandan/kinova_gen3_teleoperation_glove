@@ -1,4 +1,4 @@
-# 🦾 Kinova Gen3 Teleoperation via Wearable Sensors
+# Kinova Gen3 Teleoperation via Wearable Sensors
 ### *Real-Time Control of a 6-DOF Robotic Arm using an ESP8266 & MPU6050 Glove*
 
 ---
